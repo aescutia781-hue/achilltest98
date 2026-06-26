@@ -15,14 +15,14 @@ echo ""
 SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
 
 # 1. Instalar Docker
-echo "[1/6] Instalando Docker..."
+echo "[1/7] Instalando Docker..."
 apt-get update -qq
 apt-get install -y -qq curl git
 curl -fsSL https://get.docker.com | sh
 echo "✓ Docker listo"
 
 # 2. Swap para Playwright
-echo "[2/6] Configurando swap..."
+echo "[2/7] Configurando swap..."
 if ! swapon --show | grep -q swap; then
   fallocate -l 4G /swapfile
   chmod 600 /swapfile
@@ -33,16 +33,24 @@ fi
 echo "✓ Swap listo"
 
 # 3. Copiar proyecto a /opt/achilltest
-echo "[3/6] Preparando proyecto..."
+echo "[3/7] Preparando proyecto..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ "$SCRIPT_DIR" != "/opt/achilltest" ]; then
+  rm -rf /opt/achilltest
   cp -r "$SCRIPT_DIR" /opt/achilltest
 fi
 cd /opt/achilltest
 echo "✓ Proyecto en /opt/achilltest"
 
-# 4. Crear .env
-echo "[4/6] Creando configuracion..."
+# 4. Parchear Dockerfiles (npm ci requiere package-lock.json que no existe)
+echo "[4/7] Arreglando Dockerfiles..."
+sed -i 's/RUN npm ci --omit=dev/RUN npm install --omit=dev/g' backend/Dockerfile 2>/dev/null || true
+sed -i 's/RUN npm ci --omit=dev/RUN npm install --omit=dev/g' backend/Dockerfile.worker 2>/dev/null || true
+sed -i 's/RUN npm ci/RUN npm install/g' frontend/Dockerfile 2>/dev/null || true
+echo "✓ Dockerfiles arreglados"
+
+# 5. Crear .env
+echo "[5/7] Creando configuracion..."
 if [ ! -f .env ]; then
   JWT=$(openssl rand -hex 64)
   ENC=$(openssl rand -hex 32)
@@ -57,6 +65,7 @@ REDIS_URL=redis://redis:6379
 JWT_SECRET=${JWT}
 JWT_EXPIRES_IN=7d
 ENCRYPTION_KEY=${ENC}
+SERVER_ENCRYPTION_KEY=${ENC}
 FRONTEND_URL=http://${SERVER_IP}:3000
 NEXT_PUBLIC_API_URL=http://${SERVER_IP}:3001
 ANTHROPIC_API_KEY=
@@ -86,8 +95,8 @@ else
   echo "✓ .env ya existe, se conserva"
 fi
 
-# 5. Levantar Docker Compose
-echo "[5/6] Levantando servicios (esto tarda ~10 min la primera vez)..."
+# 6. Levantar Docker Compose
+echo "[6/7] Levantando servicios (esto tarda ~10 min la primera vez)..."
 docker compose up -d --build
 
 # Esperar Postgres
@@ -100,9 +109,9 @@ done
 echo ""
 echo "✓ PostgreSQL listo"
 
-# 6. Migraciones
-echo "[6/6] Aplicando migraciones..."
-for f in $(ls backend/src/db/migrations/*.sql | sort); do
+# 7. Migraciones
+echo "[7/7] Aplicando migraciones..."
+for f in $(ls backend/src/db/migrations/*.sql 2>/dev/null | sort); do
   docker compose exec -T postgres psql -U achilltest -d achilltest < "$f" &>/dev/null || true
   echo "   ✓ $(basename $f)"
 done
