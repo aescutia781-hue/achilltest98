@@ -244,14 +244,14 @@ export default function PricingPage() {
                 disabled={loading === plan.id}
                 style={{
                   width:'100%', padding:'.875rem', borderRadius:'10px',
-                  border:'none', cursor: loading === plan.id ? 'not-allowed' : 'pointer',
+                  cursor: loading === plan.id ? 'not-allowed' : 'pointer',
                   fontSize:'.9375rem', fontWeight:600, fontFamily:'inherit',
                   transition:'all .2s',
                   background: plan.featured
                     ? (loading === plan.id ? '#4a3a7a' : '#7c5cbf')
                     : 'transparent',
                   color: plan.featured ? '#fff' : '#c4c4d8',
-                  border_: plan.featured ? 'none' : '1px solid rgba(255,255,255,.12)',
+                  border: plan.featured ? 'none' : '1px solid rgba(255,255,255,.12)',
                   boxShadow: plan.featured && loading !== plan.id
                     ? '0 4px 20px rgba(124,92,191,.4)'
                     : 'none',

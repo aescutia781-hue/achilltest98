@@ -11,6 +11,9 @@ export interface User {
   mpSubscriptionStatus: string
   trialEndsAt:          string | null
   paidSince:            string | null
+  specsUsedTrial:       number
+  emailVerified:        boolean
+  currentOrganizationId: string | null
   createdAt:            string
 }
 
